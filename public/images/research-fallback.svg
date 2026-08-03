@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
+    <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f8fafc" />
+            <stop offset="100%" stop-color="#e2e8f0" />
+        </linearGradient>
+        <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#3b82f6" />
+            <stop offset="100%" stop-color="#2563eb" />
+        </linearGradient>
+        <pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+            <circle fill="#cbd5e1" cx="2" cy="2" r="2"></circle>
+        </pattern>
+    </defs>
+    
+    <!-- Background -->
+    <rect width="800" height="600" fill="url(#bg)" />
+    <rect width="800" height="600" fill="url(#dots)" opacity="0.5" />
+    
+    <!-- Center Graphic -->
+    <g transform="translate(320, 220)">
+        <!-- Document Base -->
+        <rect x="20" y="10" width="120" height="160" rx="8" fill="#ffffff" filter="drop-shadow(0 10px 15px rgba(0,0,0,0.1))" />
+        <!-- Top Fold -->
+        <path d="M100 10 L140 50 L100 50 Z" fill="#e2e8f0" />
+        <!-- Accent Line -->
+        <rect x="20" y="10" width="120" height="6" fill="url(#primary)" rx="2" />
+        <!-- Document Lines -->
+        <rect x="40" y="50" width="60" height="6" rx="3" fill="#cbd5e1" />
+        <rect x="40" y="75" width="80" height="6" rx="3" fill="#94a3b8" />
+        <rect x="40" y="100" width="80" height="6" rx="3" fill="#e2e8f0" />
+        <rect x="40" y="125" width="50" height="6" rx="3" fill="#e2e8f0" />
+    </g>
+    
+    <!-- Text -->
+    <text x="400" y="440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="600" fill="#64748b" text-anchor="middle" letter-spacing="1">ACADEMIC RESEARCH</text>
+</svg>

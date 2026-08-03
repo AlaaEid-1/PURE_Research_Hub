@@ -1,0 +1,57 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - .:/var/www
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+    entrypoint: ["/var/www/docker/entrypoint.sh"]
+    command: ["php-fpm"]
+    depends_on:
+      - db
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - app
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/queue/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - .:/var/www
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+    entrypoint: ["/var/www/docker/entrypoint.sh"]
+    command: ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
+    depends_on:
+      - db
+      - app
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-pure_research_hub}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_USER: ${DB_USERNAME:-pure_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:
