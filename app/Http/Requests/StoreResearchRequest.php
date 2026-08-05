@@ -41,7 +41,7 @@ class StoreResearchRequest extends FormRequest
                 'required',
                 File::types(['application/pdf', 'application/x-pdf'])
                     ->extensions(['pdf'])
-                    ->max(102400),
+                    ->max(262144),
             ],
 
             // Strict image validation: extension + MIME type + 5MB maximum
@@ -67,7 +67,7 @@ class StoreResearchRequest extends FormRequest
             'pdf_file.required' => 'Please select a research paper PDF file to upload.',
             'pdf_file.types' => 'The manuscript must be a genuine PDF document (application/pdf MIME type required).',
             'pdf_file.extensions' => 'The manuscript file must have a .pdf extension.',
-            'pdf_file.max' => 'The research paper PDF must not exceed 100MB. Consider compressing your document.',
+            'pdf_file.max' => 'The research paper PDF must not exceed 256MB. Consider compressing your document.',
             'thumbnail_file.image' => 'The cover must be a valid image file (JPG, PNG, or WEBP).',
             'thumbnail_file.extensions' => 'The cover image must have a .jpg, .jpeg, .png, or .webp extension.',
             'thumbnail_file.max' => 'The thumbnail image must not exceed 5MB.',

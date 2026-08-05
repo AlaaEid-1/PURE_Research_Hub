@@ -1,18 +1,17 @@
 #!/bin/bash
 set -e
 
-echo "Starting Laravel deployment..."
+echo " Starting Laravel deployment..."
 
-# Clear old caches first
+# Check Laravel installation
+if [ ! -f "artisan" ]; then
+    echo " Laravel artisan file not found."
+    exit 1
+fi
+
+echo " Clearing old caches..."
 php artisan optimize:clear || true
 
-# Build production caches
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Create storage symlink
-php artisan storage:link || true
 
 # Run database operations only for web container
 if [[ "$1" == "apache2-foreground"* ]]; then
@@ -20,11 +19,23 @@ if [[ "$1" == "apache2-foreground"* ]]; then
     echo "Running database migrations..."
     php artisan migrate --force
 
-    echo "Running database seeders..."
+    echo " Running database seeders..."
     php artisan db:seed --force
 
 fi
 
-echo "Laravel deployment completed successfully."
+
+echo " Creating storage symlink..."
+php artisan storage:link || true
+
+
+echo "Building production caches..."
+
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+
+echo " Laravel deployment completed successfully."
 
 exec "$@"

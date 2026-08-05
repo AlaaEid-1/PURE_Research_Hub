@@ -27,4 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, Request $request) {
+            return redirect()->back()->withErrors([
+                'pdf_file' => 'The uploaded file exceeds the maximum allowed size of 256MB.',
+                'avatar' => 'The uploaded image exceeds the maximum allowed size of 5MB.'
+            ])->withInput();
+        });
     })->create();

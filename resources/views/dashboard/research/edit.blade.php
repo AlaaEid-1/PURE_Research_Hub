@@ -7,7 +7,7 @@
         </div>
 
         <div class="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xl glass-card">
-            <form action="{{ route('dashboard.research.update', $research) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+            <form action="{{ route('dashboard.research.update', $research) }}" method="POST" id="uploadForm" enctype="multipart/form-data" class="space-y-6">
                 @csrf
                 @method('PUT')
 
@@ -84,11 +84,11 @@
 
                 <!-- File Uploads Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <!-- Replace PDF File Optional (Up to 100MB) -->
+                    <!-- Replace PDF File Optional (Up to 256MB) -->
                     <div>
-                        <label for="pdf_file" class="block text-xs font-semibold uppercase text-slate-700 dark:text-slate-300 mb-1">Replace PDF File (Optional, Max 100MB)</label>
+                        <label for="pdf_file" class="block text-xs font-semibold uppercase text-slate-700 dark:text-slate-300 mb-1">Replace PDF File (Optional, Max 256MB)</label>
                         <input type="file" name="pdf_file" id="pdf_file" accept="application/pdf" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
-                        <p class="text-[10px] text-slate-400 mt-1">Leave empty to keep current PDF. Up to <strong>100MB</strong></p>
+                        <p class="text-[10px] text-slate-400 mt-1">Leave empty to keep current PDF. Up to <strong>256MB</strong></p>
                         @error('pdf_file') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
@@ -116,4 +116,93 @@
             </form>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('uploadForm');
+        if (!form) return;
+        
+        const pdfInput = document.getElementById('pdf_file');
+        const thumbInput = document.getElementById('thumbnail_file');
+        const submitBtns = form.querySelectorAll('button[type="submit"]');
+        let isSubmitting = false;
+
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+
+        function handleFileInput(input, maxSizeMB, errorMsg) {
+            if (!input) return;
+            input.addEventListener('change', function () {
+                const file = this.files[0];
+                
+                const existingLabel = this.parentNode.querySelector('.file-size-label');
+                if (existingLabel) existingLabel.remove();
+
+                if (file) {
+                    const maxBytes = maxSizeMB * 1024 * 1024;
+                    if (file.size > maxBytes) {
+                        alert(errorMsg);
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const sizeLabel = document.createElement('p');
+                    sizeLabel.className = 'text-xs font-semibold text-blue-600 dark:text-blue-400 mt-2 file-size-label';
+                    sizeLabel.textContent = 'Selected size: ' + formatBytes(file.size);
+                    this.parentNode.appendChild(sizeLabel);
+                }
+            });
+        }
+
+        handleFileInput(pdfInput, 256, 'The selected PDF exceeds the maximum allowed size of 256MB.');
+        handleFileInput(thumbInput, 5, 'The selected image exceeds the maximum allowed size of 5MB.');
+
+        // Prevent double submit and show loader
+        form.addEventListener('submit', function (e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Check file again just in case
+            if (pdfInput && pdfInput.files.length > 0 && pdfInput.files[0].size > (256 * 1024 * 1024)) {
+                e.preventDefault();
+                alert('The selected PDF exceeds the maximum allowed size of 256MB.');
+                return;
+            }
+
+            isSubmitting = true;
+
+            const submitValue = e.submitter ? e.submitter.value : 'submit';
+
+            submitBtns.forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                btn.classList.add('opacity-50');
+                
+                if (btn.value === submitValue) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Uploading...`;
+                }
+            });
+
+            // Show a waiting message below the buttons
+            const actionsContainer = form.querySelector('.flex.flex-col.sm\\:flex-row.items-center.justify-end');
+            if (actionsContainer && !document.getElementById('uploadWaitMsg')) {
+                const msgContainer = document.createElement('div');
+                msgContainer.id = 'uploadWaitMsg';
+                msgContainer.className = 'w-full mt-4 text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50';
+                msgContainer.innerHTML = '<span class="font-semibold block text-sm">Large files may take a few minutes to upload.</span><span class="text-xs opacity-80 block mt-1">Please wait and do not refresh the page.</span>';
+                actionsContainer.parentNode.appendChild(msgContainer);
+            }
+        });
+    });
+    </script>
+    @endpush
 </x-app-layout>

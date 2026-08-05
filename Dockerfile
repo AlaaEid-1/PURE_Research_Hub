@@ -67,6 +67,9 @@ RUN mkdir -p /var/www/html/storage/framework/cache/data \
 # Expose port 80
 EXPOSE 80
 
+# Copy custom PHP uploads configuration
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Configure custom entrypoint
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

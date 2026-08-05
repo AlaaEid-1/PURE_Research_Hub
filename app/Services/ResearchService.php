@@ -22,45 +22,70 @@ class ResearchService
     public function createResearch(User $user, ResearchData $dto): Research
     {
         $pdfPath = null;
-        if ($dto->pdfFile) {
-            $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
-            if ($magic !== '%PDF') {
-                throw ValidationException::withMessages(['pdf_file' => 'The uploaded file is not a valid PDF document.']);
+        $thumbnailPath = null;
+
+        try {
+            if ($dto->pdfFile) {
+                $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
+                if ($magic !== '%PDF') {
+                    throw ValidationException::withMessages(['pdf_file' => 'The uploaded file is not a valid PDF document.']);
+                }
+
+                $safeFilename = Str::uuid().'.pdf';
+                $pdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
             }
 
-            $safeFilename = Str::uuid().'.pdf';
-            $pdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
+            if ($dto->thumbnailFile) {
+                $thumbnailPath = $this->processThumbnail($dto->thumbnailFile);
+            }
+
+            $research = \Illuminate\Support\Facades\DB::transaction(function () use ($user, $dto, $pdfPath, $thumbnailPath) {
+                $research = Research::create([
+                    'user_id' => $user->id,
+                    'category_id' => $dto->categoryId,
+                    'title' => $dto->title,
+                    'abstract' => $dto->abstract,
+                    'keywords' => $dto->keywords,
+                    'doi' => $dto->doi,
+                    'publication_date' => $dto->publicationDate,
+                    'pdf_path' => $pdfPath ?? '',
+                    'thumbnail_path' => $thumbnailPath,
+                    'copyright_information' => $dto->copyrightInformation,
+                    'download_permission' => $dto->downloadPermission,
+                    'status' => $dto->status,
+                    'views' => 0,
+                    'downloads' => 0,
+                ]);
+
+                $this->syncAuthors($research, $user, $dto->coAuthorIds);
+                
+                return $research;
+            });
+
+            if ($pdfPath) {
+                ProcessResearchPdfJob::dispatch($pdfPath);
+            }
+
+            return $research;
+
+        } catch (\Exception $e) {
+            if ($pdfPath) {
+                Storage::disk('private_research')->delete($pdfPath);
+            }
+            if ($thumbnailPath) {
+                Storage::disk('private_research')->delete($thumbnailPath);
+            }
+
+            \Illuminate\Support\Facades\Log::error('Research creation failed: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'filename' => $dto->pdfFile?->getClientOriginalName(),
+                'size' => $dto->pdfFile?->getSize(),
+                'mime' => $dto->pdfFile?->getMimeType(),
+                'exception' => $e
+            ]);
+
+            throw $e;
         }
-
-        $thumbnailPath = null;
-        if ($dto->thumbnailFile) {
-            $thumbnailPath = $this->processThumbnail($dto->thumbnailFile);
-        }
-
-        $research = Research::create([
-            'user_id' => $user->id,
-            'category_id' => $dto->categoryId,
-            'title' => $dto->title,
-            'abstract' => $dto->abstract,
-            'keywords' => $dto->keywords,
-            'doi' => $dto->doi,
-            'publication_date' => $dto->publicationDate,
-            'pdf_path' => $pdfPath ?? '',
-            'thumbnail_path' => $thumbnailPath,
-            'copyright_information' => $dto->copyrightInformation,
-            'download_permission' => $dto->downloadPermission,
-            'status' => $dto->status,
-            'views' => 0,
-            'downloads' => 0,
-        ]);
-
-        $this->syncAuthors($research, $user, $dto->coAuthorIds);
-
-        if ($pdfPath) {
-            ProcessResearchPdfJob::dispatch($pdfPath);
-        }
-
-        return $research;
     }
 
     /**
@@ -68,46 +93,68 @@ class ResearchService
      */
     public function updateResearch(Research $research, ResearchData $dto): Research
     {
-        $pdfPath = $research->pdf_path;
+        $newPdfPath = null;
+        $newThumbnailPath = null;
         $newPdfUploaded = false;
 
-        if ($dto->pdfFile) {
-            $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
-            if ($magic !== '%PDF') {
-                throw ValidationException::withMessages(['pdf_file' => 'The uploaded replacement file is not a valid PDF document.']);
+        try {
+            if ($dto->pdfFile) {
+                $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
+                if ($magic !== '%PDF') {
+                    throw ValidationException::withMessages(['pdf_file' => 'The uploaded replacement file is not a valid PDF document.']);
+                }
+
+                $safeFilename = Str::uuid().'.pdf';
+                $newPdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
+                $newPdfUploaded = true;
             }
 
-            $safeFilename = Str::uuid().'.pdf';
-            $pdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
-            $newPdfUploaded = true;
+            if ($dto->thumbnailFile) {
+                $newThumbnailPath = $this->processThumbnail($dto->thumbnailFile);
+            }
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($research, $dto, $newPdfPath, $newThumbnailPath) {
+                $research->update([
+                    'category_id' => $dto->categoryId,
+                    'title' => $dto->title,
+                    'abstract' => $dto->abstract,
+                    'keywords' => $dto->keywords,
+                    'doi' => $dto->doi,
+                    'publication_date' => $dto->publicationDate,
+                    'pdf_path' => $newPdfPath ?? $research->pdf_path,
+                    'thumbnail_path' => $newThumbnailPath ?? $research->thumbnail_path,
+                    'copyright_information' => $dto->copyrightInformation,
+                    'download_permission' => $dto->downloadPermission,
+                    'status' => $dto->status,
+                ]);
+
+                $this->syncAuthors($research, $research->user, $dto->coAuthorIds);
+            });
+
+            if ($newPdfUploaded && $newPdfPath) {
+                ProcessResearchPdfJob::dispatch($newPdfPath);
+            }
+
+            return $research;
+
+        } catch (\Exception $e) {
+            if ($newPdfPath) {
+                Storage::disk('private_research')->delete($newPdfPath);
+            }
+            if ($newThumbnailPath) {
+                Storage::disk('private_research')->delete($newThumbnailPath);
+            }
+
+            \Illuminate\Support\Facades\Log::error('Research update failed: ' . $e->getMessage(), [
+                'user_id' => $research->user_id,
+                'research_id' => $research->id,
+                'filename' => $dto->pdfFile?->getClientOriginalName(),
+                'size' => $dto->pdfFile?->getSize(),
+                'exception' => $e
+            ]);
+
+            throw $e;
         }
-
-        $thumbnailPath = $research->thumbnail_path;
-        if ($dto->thumbnailFile) {
-            $thumbnailPath = $this->processThumbnail($dto->thumbnailFile);
-        }
-
-        $research->update([
-            'category_id' => $dto->categoryId,
-            'title' => $dto->title,
-            'abstract' => $dto->abstract,
-            'keywords' => $dto->keywords,
-            'doi' => $dto->doi,
-            'publication_date' => $dto->publicationDate,
-            'pdf_path' => $pdfPath,
-            'thumbnail_path' => $thumbnailPath,
-            'copyright_information' => $dto->copyrightInformation,
-            'download_permission' => $dto->downloadPermission,
-            'status' => $dto->status,
-        ]);
-
-        $this->syncAuthors($research, $research->user, $dto->coAuthorIds);
-
-        if ($newPdfUploaded && $pdfPath) {
-            ProcessResearchPdfJob::dispatch($pdfPath);
-        }
-
-        return $research;
     }
 
     /**
@@ -204,27 +251,23 @@ class ResearchService
      */
     protected function processThumbnail(UploadedFile $file): string
     {
-        // Try to process via Intervention Image using GD
         try {
-            $manager = new ImageManager('gd');
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
             $image = $manager->decodePath($file->getRealPath());
 
             // Resize max 800x600 (scale down if larger) maintaining aspect ratio
             $image->scaleDown(width: 800, height: 600);
 
             // Convert to WebP and set quality to 82
-            $encoded = $image->toWebp(82);
+            $encoded = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(82));
             $filename = Str::uuid().'.webp';
 
             Storage::disk('private_research')->put('thumbnails/'.$filename, (string) $encoded);
 
             return 'thumbnails/'.$filename;
         } catch (\Exception $e) {
-            // Fallback if intervention fails (e.g., non-image, or bad driver)
-            // Just store the original file directly
-            $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
-
-            return $file->storeAs('thumbnails', $filename, 'private_research');
+            \Illuminate\Support\Facades\Log::error('Thumbnail processing failed', ['error' => $e->getMessage()]);
+            throw ValidationException::withMessages(['thumbnail_file' => 'The uploaded image could not be processed. Please try a different image.']);
         }
     }
 }

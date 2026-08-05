@@ -10,7 +10,7 @@
         <div class="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm glass-card">
             <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">Researcher Profile Details</h2>
 
-            <form method="POST" action="{{ route('user-profile-information.update') }}" enctype="multipart/form-data" class="space-y-6">
+            <form method="POST" action="{{ route('user-profile-information.update') }}" id="profileForm" enctype="multipart/form-data" class="space-y-6">
                 @csrf
                 @method('PUT')
 
@@ -87,9 +87,9 @@
                 </div>
 
                 <div class="flex justify-end">
-                    <x-ui.button type="submit" variant="primary" size="md">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-colors">
                         Save Profile Changes
-                    </x-ui.button>
+                    </button>
                 </div>
             </form>
         </div>
@@ -129,4 +129,71 @@
             </form>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('profileForm');
+        if (!form) return;
+        
+        const avatarInput = document.getElementById('avatar');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        let isSubmitting = false;
+
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+
+        if (avatarInput) {
+            avatarInput.addEventListener('change', function () {
+                const file = this.files[0];
+                
+                const existingLabel = this.parentNode.querySelector('.file-size-label');
+                if (existingLabel) existingLabel.remove();
+
+                if (file) {
+                    const maxBytes = 5 * 1024 * 1024;
+                    if (file.size > maxBytes) {
+                        alert('The selected image exceeds the maximum allowed size of 5MB.');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const sizeLabel = document.createElement('p');
+                    sizeLabel.className = 'text-xs font-semibold text-blue-600 dark:text-blue-400 mt-2 file-size-label';
+                    sizeLabel.textContent = 'Selected size: ' + formatBytes(file.size);
+                    this.parentNode.appendChild(sizeLabel);
+                }
+            });
+        }
+
+        form.addEventListener('submit', function (e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return;
+            }
+            
+            if (avatarInput && avatarInput.files.length > 0 && avatarInput.files[0].size > (5 * 1024 * 1024)) {
+                e.preventDefault();
+                alert('The selected image exceeds the maximum allowed size of 5MB.');
+                return;
+            }
+
+            isSubmitting = true;
+
+            if (submitBtn) {
+                submitBtn.style.pointerEvents = 'none';
+                submitBtn.classList.add('opacity-50');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...`;
+            }
+        });
+    });
+    </script>
+    @endpush
 </x-app-layout>
