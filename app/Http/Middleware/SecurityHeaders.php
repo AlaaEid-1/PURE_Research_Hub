@@ -45,13 +45,12 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 
         // Content Security Policy
-        // Allows: self, inline scripts (only via nonce or strict settings, though Alpine needs 'unsafe-inline'),
-        //         Google Fonts, CDN assets. Blocks frames from foreign origins.
+        // Allows: self, inline scripts, unsafe-eval for Alpine.js, Google & Bunny Fonts, CDN assets.
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-            "font-src 'self' https://fonts.gstatic.com data:",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.jsdelivr.net",
+            "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https:",
             "connect-src 'self' ".(app()->environment('local') ? 'ws: wss: http: https:' : ''),
             "frame-ancestors 'self'",

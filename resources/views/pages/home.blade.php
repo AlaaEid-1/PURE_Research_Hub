@@ -22,7 +22,7 @@
 
             <!-- Main Search Bar -->
             <div class="mt-10 max-w-3xl mx-auto">
-                <x-search-bar placeholder="Search by paper title, DOI, author name, or research discipline..." />
+                <x-search-bar placeholder="Search by paper title, DOI, author name, or research discipline..." action="{{ route('research.index') }}" />
                 <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
                     Try searching for: <span class="font-medium text-slate-700 dark:text-slate-300">Artificial Intelligence</span>, <span class="font-medium text-slate-700 dark:text-slate-300">Quantum Computing</span>, or <span class="font-medium text-slate-700 dark:text-slate-300">Genomics</span>
                 </p>

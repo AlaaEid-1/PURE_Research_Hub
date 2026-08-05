@@ -10,6 +10,12 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Sign in to your PURE Research Hub account</p>
             </div>
 
+            @if (session('status'))
+                <x-ui.alert type="success" class="mb-5">
+                    {{ session('status') }}
+                </x-ui.alert>
+            @endif
+
             <!-- Form -->
             <form method="POST" action="{{ route('login') }}" class="space-y-5">
                 @csrf
@@ -29,13 +35,8 @@
                 </div>
 
                 <div>
-                    <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center mb-2">
                         <label for="password" class="block text-xs font-semibold uppercase text-slate-700 dark:text-slate-300">Password</label>
-                        @if (Route::has('password.request'))
-                            <a href="{{ route('password.request') }}" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                                Forgot password?
-                            </a>
-                        @endif
                     </div>
                     <input 
                         type="password" 

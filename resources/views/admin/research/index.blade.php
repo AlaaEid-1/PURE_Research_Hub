@@ -25,6 +25,9 @@
             <a href="{{ route('admin.research.index', ['status' => 'rejected']) }}" class="px-4 py-2 rounded-xl text-xs font-semibold transition-colors {{ $status === 'rejected' ? 'bg-red-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200' }}">
                 Rejected
             </a>
+            <a href="{{ route('admin.research.index', ['status' => 'archived']) }}" class="px-4 py-2 rounded-xl text-xs font-semibold transition-colors {{ $status === 'archived' ? 'bg-slate-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200' }}">
+                Archived
+            </a>
         </div>
 
         <!-- Papers Table -->
@@ -45,10 +48,11 @@
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             @foreach($researches as $paper)
                                 <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                    <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white max-w-xs truncate">
-                                        <a href="{{ route('research.show', $paper->slug) }}" target="_blank" class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white max-w-xs">
+                                        <a href="{{ route('admin.research.show', $paper) }}" class="hover:text-blue-600 dark:hover:text-blue-400 block truncate">
                                             {{ $paper->title }}
                                         </a>
+                                        <a href="{{ route('research.show', $paper->slug) }}" target="_blank" class="text-[10px] text-slate-400 hover:text-blue-500 mt-0.5 block">View public page &rarr;</a>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <a href="{{ route('researchers.show', $paper->user) }}" class="font-bold text-slate-900 dark:text-white hover:underline">
@@ -121,4 +125,4 @@
             />
         @endif
     </div>
-</x-app-layout>
+</x-admin-layout>

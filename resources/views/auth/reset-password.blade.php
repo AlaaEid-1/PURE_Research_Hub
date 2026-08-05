@@ -9,6 +9,12 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Choose a secure new password for your account</p>
             </div>
 
+            @if (session('status'))
+                <x-ui.alert type="success" class="mb-5">
+                    {{ session('status') }}
+                </x-ui.alert>
+            @endif
+
             <form method="POST" action="{{ route('password.update') }}" class="space-y-5">
                 @csrf
                 <input type="hidden" name="token" value="{{ $request->route('token') }}">
@@ -33,6 +39,7 @@
                         name="password" 
                         id="password" 
                         required 
+                        autofocus
                         class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
                     @error('password') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
@@ -47,12 +54,19 @@
                         required 
                         class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
+                    @error('password_confirmation') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 <x-ui.button type="submit" variant="primary" size="lg" class="w-full py-3">
                     Reset Password
                 </x-ui.button>
             </form>
+
+            <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+                <a href="{{ route('login') }}" class="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400">
+                    &larr; Back to Login
+                </a>
+            </div>
         </div>
     </div>
 </x-guest-layout>

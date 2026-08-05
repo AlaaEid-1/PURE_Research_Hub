@@ -16,34 +16,34 @@
             <div class="space-y-6">
                 <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Built for Open Access & Global Collaboration</h2>
                 <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
-                    We believe that academic research should be easily discoverable and accessible to researchers, institutions, and scholars worldwide without artificial barriers.
+                    PURE Research Hub is a dedicated academic platform empowering researchers, universities, and scientific organizations. We bridge the gap between discovery and dissemination, providing a secure ecosystem that solves the complexities of modern knowledge sharing and supports institutional excellence.
                 </p>
                 <ul class="space-y-3">
                     <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
                         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        Seamless publication workflow and researcher profiles
+                        Secure research publication and controlled access
                     </li>
                     <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
                         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        PostgreSQL compatible indexing for high scalability
+                        Enhanced research visibility and discoverability
                     </li>
                     <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
                         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        Clean Architecture & Fortify authentication security
+                        Seamless academic collaboration across institutions
                     </li>
                 </ul>
             </div>
 
             <div class="p-8 rounded-3xl bg-gradient-to-br from-slate-900 to-blue-950 text-white shadow-xl">
-                <h3 class="text-xl font-bold mb-4">Architecture Highlights</h3>
+                <h3 class="text-xl font-bold mb-4">Platform Impact</h3>
                 <div class="space-y-4 text-sm text-slate-300">
                     <div class="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                        <span class="font-semibold text-white">Laravel 13 Framework</span>
-                        <p class="text-xs text-slate-400 mt-1">Leveraging modern PHP 8.4+, Vite, and Blade component architecture.</p>
+                        <span class="font-semibold text-white">Knowledge Sharing</span>
+                        <p class="text-xs text-slate-400 mt-1">Fostering open access while maintaining rigorous standards for academic integrity.</p>
                     </div>
                     <div class="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                        <span class="font-semibold text-white">Service Layer Pattern</span>
-                        <p class="text-xs text-slate-400 mt-1">Decoupled business logic via DTOs and Services.</p>
+                        <span class="font-semibold text-white">Responsible Management</span>
+                        <p class="text-xs text-slate-400 mt-1">Ensuring the long-term preservation and curation of scientific publications.</p>
                     </div>
                 </div>
             </div>

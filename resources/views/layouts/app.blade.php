@@ -17,6 +17,15 @@
 
     <!-- Assets -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Dark Mode FOUC Prevention -->
+    <script>
+        if (localStorage.getItem('darkMode') === 'true' || (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
 <body class="h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
     <!-- Authenticated Navbar -->
@@ -55,5 +64,20 @@
 
     <!-- Footer -->
     <x-layout.footer />
+
+    <!-- Real-Time Echo User Notification Listener -->
+    @auth
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.Echo) {
+                    window.Echo.private(`App.Models.User.{{ auth()->id() }}`)
+                        .notification((notification) => {
+                            console.log('Realtime Notification Received:', notification);
+                            window.dispatchEvent(new CustomEvent('notification-received', { detail: notification }));
+                        });
+                }
+            });
+        </script>
+    @endauth
 </body>
 </html>

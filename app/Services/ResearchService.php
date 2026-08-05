@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\DTOs\ResearchData;
+use App\Enums\ResearchStatus;
 use App\Jobs\ProcessResearchPdfJob;
 use App\Models\Research;
 use App\Models\User;
+use App\Notifications\ResearchStatusChangedNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -114,6 +116,65 @@ class ResearchService
     public function deleteResearch(Research $research): void
     {
         $research->delete();
+    }
+
+    /**
+     * Approve a research publication and send notification to author.
+     */
+    public function approveResearch(Research $research): void
+    {
+        $this->updateStatus($research, ResearchStatus::PUBLISHED);
+    }
+
+    /**
+     * Reject a research publication and send notification to author.
+     */
+    public function rejectResearch(Research $research): void
+    {
+        $this->updateStatus($research, ResearchStatus::REJECTED);
+    }
+
+    /**
+     * Request changes for a research publication and send notification to author.
+     */
+    public function requestChangesResearch(Research $research): void
+    {
+        $this->updateStatus($research, ResearchStatus::UNDER_REVIEW);
+    }
+
+    /**
+     * Archive a research publication.
+     */
+    public function archiveResearch(Research $research): void
+    {
+        $this->updateStatus($research, ResearchStatus::ARCHIVED);
+    }
+
+
+    /**
+     * Update paper status, clear category cache, and dispatch author notification.
+     */
+    public function updateStatus(Research $research, ResearchStatus $newStatus): void
+    {
+        $previousStatus = $research->status->value;
+
+        $research->update([
+            'status' => $newStatus,
+        ]);
+
+        app(ResearchCategoryService::class)->clearCache();
+
+        if ($research->user) {
+            $research->user->notify(new ResearchStatusChangedNotification($research, $previousStatus));
+        }
+    }
+
+    /**
+     * Increment the views count for a paper.
+     */
+    public function incrementViews(Research $research): void
+    {
+        $research->increment('views');
     }
 
     /**

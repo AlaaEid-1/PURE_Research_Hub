@@ -36,6 +36,15 @@
 
     <!-- Assets -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Dark Mode FOUC Prevention -->
+    <script>
+        if (localStorage.getItem('darkMode') === 'true' || (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
 <body class="h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
     <!-- Navbar -->

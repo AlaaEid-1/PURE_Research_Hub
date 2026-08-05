@@ -5,7 +5,9 @@ namespace Tests\Feature\Admin;
 use App\Enums\ResearchStatus;
 use App\Models\Research;
 use App\Models\User;
+use App\Notifications\ResearchStatusChangedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AdminResearchTest extends TestCase
@@ -38,16 +40,25 @@ class AdminResearchTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Pending Review Manuscript');
 
+        Notification::fake();
+
         // Approve paper
         $approveResponse = $this->actingAs($admin)->post("/admin/research/{$research->id}/approve");
         $approveResponse->assertRedirect();
 
         $research->refresh();
         $this->assertSame(ResearchStatus::PUBLISHED, $research->status);
+
+        Notification::assertSentTo(
+            $author,
+            ResearchStatusChangedNotification::class
+        );
     }
 
     public function test_admin_can_reject_or_request_changes_on_paper(): void
     {
+        Notification::fake();
+
         $admin = User::factory()->admin()->create();
         $author = User::factory()->create();
 
@@ -64,6 +75,11 @@ class AdminResearchTest extends TestCase
         $this->actingAs($admin)->post("/admin/research/{$research->id}/request-changes")->assertRedirect();
         $research->refresh();
         $this->assertSame(ResearchStatus::UNDER_REVIEW, $research->status);
+
+        Notification::assertSentTo(
+            $author,
+            ResearchStatusChangedNotification::class
+        );
 
         // Reject paper
         $this->actingAs($admin)->post("/admin/research/{$research->id}/reject")->assertRedirect();

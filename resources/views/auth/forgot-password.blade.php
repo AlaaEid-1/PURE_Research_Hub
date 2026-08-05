@@ -11,6 +11,12 @@
                 </p>
             </div>
 
+            @if (session('status'))
+                <x-ui.alert type="success" class="mb-5">
+                    {{ session('status') }}
+                </x-ui.alert>
+            @endif
+
             <form method="POST" action="{{ route('password.email') }}" class="space-y-5">
                 @csrf
 

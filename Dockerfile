@@ -1,0 +1,71 @@
+# Stage 1: Build Frontend Assets
+FROM node:20-alpine AS frontend
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+COPY . .
+RUN npm run build
+
+# Stage 2: Build Application
+FROM php:8.4-apache
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    libicu-dev \
+    supervisor \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-configure intl \
+    && docker-php-ext-install pdo_mysql mysqli mbstring exif pcntl bcmath zip intl opcache
+
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
+
+# Update Apache configuration to point to public directory
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Copy application files
+COPY . .
+
+# Copy compiled frontend assets from Stage 1
+COPY --from=frontend /app/public/build ./public/build
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache \
+    && chmod 644 /var/www/html/docker/certs/ca.pem
+
+# Expose port 80
+EXPOSE 80
+
+# Configure custom entrypoint
+COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+# Default command (Web Service)
+CMD ["apache2-foreground"]

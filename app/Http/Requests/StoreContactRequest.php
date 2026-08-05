@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreContactRequest extends FormRequest
 {
@@ -12,7 +13,7 @@ class StoreContactRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return true;
     }
 
     /**
@@ -23,7 +24,10 @@ class StoreContactRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'message' => ['required', 'string', 'min:10', 'max:1000'],
+            'guest_name' => ['nullable', Rule::requiredIf(fn () => $this->user() === null), 'string', 'max:255'],
+            'guest_email' => ['nullable', Rule::requiredIf(fn () => $this->user() === null), 'email', 'max:255'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'message' => ['required', 'string', 'min:10', 'max:2000'],
         ];
     }
 }

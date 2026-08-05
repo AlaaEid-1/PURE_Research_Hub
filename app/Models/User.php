@@ -141,6 +141,46 @@ class User extends Authenticatable
     }
 
     /**
+     * Conversations initiated by this user.
+     *
+     * @return HasMany<Conversation, $this>
+     */
+    public function sentConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'sender_id');
+    }
+
+    /**
+     * Conversations received by this author.
+     *
+     * @return HasMany<Conversation, $this>
+     */
+    public function receivedConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'author_id');
+    }
+
+    /**
+     * Messages sent by this user.
+     *
+     * @return HasMany<Message, $this>
+     */
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    /**
+     * Research access grants issued to this user.
+     *
+     * @return HasMany<ResearchAccessGrant, $this>
+     */
+    public function accessGrants(): HasMany
+    {
+        return $this->hasMany(ResearchAccessGrant::class, 'user_id');
+    }
+
+    /**
      * Bookmarked/saved research papers collection.
      *
      * @return BelongsToMany<Research, $this>

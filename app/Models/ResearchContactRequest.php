@@ -14,6 +14,7 @@ class ResearchContactRequest extends Model
     protected $fillable = [
         'research_id',
         'sender_id',
+        'subject',
         'message',
         'status',
     ];
@@ -48,5 +49,23 @@ class ResearchContactRequest extends Model
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    /**
+     * Get all replies in this conversation thread.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<ResearchContactReply, $this>
+     */
+    public function replies(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ResearchContactReply::class, 'contact_request_id')->orderBy('created_at', 'asc');
+    }
+
+    /**
+     * Helper accessor for author user.
+     */
+    public function getAuthorAttribute(): ?User
+    {
+        return $this->research?->user;
     }
 }

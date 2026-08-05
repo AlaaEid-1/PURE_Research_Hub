@@ -104,6 +104,26 @@ class Research extends Model
     }
 
     /**
+     * Get conversations created for this research paper.
+     *
+     * @return HasMany<Conversation, $this>
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    /**
+     * Get access grants issued for this research paper.
+     *
+     * @return HasMany<ResearchAccessGrant, $this>
+     */
+    public function accessGrants(): HasMany
+    {
+        return $this->hasMany(ResearchAccessGrant::class);
+    }
+
+    /**
      * Get the download analytics log records for this paper.
      *
      * @return HasMany<ResearchDownloadLog, $this>

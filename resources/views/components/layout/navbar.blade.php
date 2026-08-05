@@ -52,20 +52,13 @@
                 </button>
 
                 @auth
-                    <!-- Notification Bell Icon -->
-                    <a href="{{ route('dashboard.notifications.index') }}" class="relative p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                        </svg>
-                        @if(auth()->user()->unreadNotifications->count() > 0)
-                            <span class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-white dark:ring-slate-900"></span>
-                        @endif
-                    </a>
+                    <!-- Real-Time Notification Dropdown -->
+                    <x-notifications.dropdown />
 
                     <!-- User Account Dropdown (Inline Alpine) -->
                     <div class="relative" x-data="{ open: false }">
                         <!-- Trigger Button -->
-                        <button type="button" @click="open = !open" class="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors focus:outline-none cursor-pointer">
+                        <button type="button" @click.stop="open = !open" class="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors focus:outline-none cursor-pointer">
                             <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" class="w-8 h-8 rounded-lg object-cover ring-2 ring-blue-600/30" onerror="this.onerror=null;this.src='{{ asset('images/avatar-fallback.svg') }}';">
                             <div class="text-left hidden lg:block">
                                 <p class="text-xs font-semibold text-slate-900 dark:text-white leading-none">{{ auth()->user()->name }}</p>

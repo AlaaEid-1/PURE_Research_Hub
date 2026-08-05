@@ -33,15 +33,26 @@
                 </ul>
             </div>
 
-            <!-- Contact & Legal -->
+            <!-- Attribution (Replaces Platform) -->
             <div>
-                <h4 class="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-4">Platform</h4>
-                <ul class="space-y-2.5 text-sm">
-                    <li><span class="text-slate-500 dark:text-slate-400">Laravel 13 Architecture</span></li>
-                    <li><span class="text-slate-500 dark:text-slate-400">Clean SaaS Design</span></li>
-                    <li><span class="text-slate-500 dark:text-slate-400">Fortify Security</span></li>
-                    <li><span class="text-slate-500 dark:text-slate-400">PostgreSQL Schema Ready</span></li>
-                </ul>
+                <h4 class="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-4">Attribution</h4>
+                <div class="flex flex-col gap-4">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        👩‍💻 Coded by Aniqa Afzal on 02-22-2022 via SheCodes and open sourced.
+                    </p>
+                    
+                    <div class="space-y-1">
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            Updated and Revised by Alaa Eid
+                        </p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Laravel Developer | AI &amp; Research Technology
+                        </p>
+                        <p class="text-[11px] text-slate-400 dark:text-slate-500">
+                            PURE Research Hub (2026)
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 

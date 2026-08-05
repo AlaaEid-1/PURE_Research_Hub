@@ -27,7 +27,22 @@ class ResearchPermissionService
             return true;
         }
 
-        // Request Access requires an approved access request
+        // Check if user has an active granted access in research_access_grants
+        if ($user !== null) {
+            $hasActiveGrant = \App\Models\ResearchAccessGrant::where('research_id', $research->id)
+                ->where('user_id', $user->id)
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->exists();
+
+            if ($hasActiveGrant) {
+                return true;
+            }
+        }
+
+        // Request Access requires an approved access request or access grant
         if ($research->download_permission === DownloadPermission::REQUEST_ACCESS) {
             if ($user === null) {
                 return false;
@@ -39,7 +54,7 @@ class ResearchPermissionService
                 ->exists();
         }
 
-        // Contact Author and Restricted permission papers block direct download
+        // Contact Author and Restricted permission papers block direct download unless active grant exists
         return false;
     }
 }
