@@ -20,7 +20,8 @@ class ResearchDownloadController extends Controller
         Gate::authorize('download', $research);
 
         if (! Storage::disk('private_research')->exists($research->pdf_path)) {
-            abort(404, 'PDF file not found.');
+            return redirect()->route('research.show', $research->slug)
+                ->with('error', 'The requested PDF file is no longer available on the server.');
         }
 
         $research->increment('downloads');

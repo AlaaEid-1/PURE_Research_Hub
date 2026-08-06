@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libicu-dev \
     supervisor \
+    exiftool \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
@@ -90,7 +91,10 @@ COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 # Configure custom entrypoint
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Setup Supervisor
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Default command (Web Service)
-CMD ["apache2-foreground"]
+# Default command (Web Service + Queue Worker)
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

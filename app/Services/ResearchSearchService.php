@@ -88,7 +88,7 @@ class ResearchSearchService
      */
     public function getRelatedResearches(Research $research, int $limit = 4): Collection
     {
-        $query = Research::with(['user', 'category'])
+        $query = Research::with(['user', 'category', 'authors'])
             ->where('id', '!=', $research->id)
             ->where('status', ResearchStatus::PUBLISHED)
             ->where('download_permission', '!=', DownloadPermission::RESTRICTED)

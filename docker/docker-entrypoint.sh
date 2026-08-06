@@ -17,16 +17,26 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+echo " Recreating required storage directories..."
+mkdir -p /var/www/html/storage/framework/cache/data \
+    /var/www/html/storage/framework/sessions \
+    /var/www/html/storage/framework/views \
+    /var/www/html/storage/framework/testing \
+    /var/www/html/storage/logs \
+    /var/www/html/storage/app/public/avatars \
+    /var/www/html/storage/app/public/thumbnails \
+    /var/www/html/storage/app/private/research/research_pdfs
+
+echo " Setting runtime permissions for storage directories..."
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
+
 echo " Creating storage symlink..."
 rm -rf public/storage 2>/dev/null || true
 php artisan storage:link --force || true
 
-echo " Setting runtime permissions..."
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
-
 # Run database operations only for web container
-if [[ "$1" == "apache2-foreground"* ]]; then
+if [[ "$1" == "/usr/bin/supervisord"* ]] || [[ "$1" == "apache2-foreground"* ]]; then
     echo "Running database migrations..."
     php artisan migrate --force
 
