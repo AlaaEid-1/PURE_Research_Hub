@@ -4,16 +4,22 @@ namespace App\Notifications;
 
 use App\Models\ResearchAccessRequest;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AccessRequestDecisionNotification extends Notification
+class AccessRequestDecisionNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 3;
+    public int $backoff = 60;
+
     public function __construct(
         public ResearchAccessRequest $accessRequest
-    ) {}
+    ) {
+        $this->onQueue('notifications');
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -34,11 +40,11 @@ class AccessRequestDecisionNotification extends Notification
         $isApproved = $this->accessRequest->status->value === 'approved';
 
         $mail = (new MailMessage)
-            ->subject('PDF Access Request Update: '.$this->accessRequest->research->title)
+            ->subject('PDF Access Request Update: '.$this->accessRequest->research?->title)
             ->greeting('Hello '.$notifiable->name.',')
-            ->line('Your PDF access request for "'.$this->accessRequest->research->title.'" has been updated: '.$statusLabel.'.');
+            ->line('Your PDF access request for "'.$this->accessRequest->research?->title.'" has been updated: '.$statusLabel.'.');
 
-        if ($isApproved) {
+        if ($isApproved && $this->accessRequest->research) {
             $mail->action('Download PDF Now', route('research.show', $this->accessRequest->research->slug));
         }
 
@@ -55,8 +61,19 @@ class AccessRequestDecisionNotification extends Notification
         return [
             'access_request_id' => $this->accessRequest->id,
             'research_id' => $this->accessRequest->research_id,
-            'research_title' => $this->accessRequest->research->title,
+            'research_title' => $this->accessRequest->research?->title,
             'status' => $this->accessRequest->status->value,
         ];
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('AccessRequestDecisionNotification failed', [
+            'access_request_id' => $this->accessRequest->id,
+            'error' => $exception->getMessage(),
+        ]);
     }
 }

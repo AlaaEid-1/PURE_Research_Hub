@@ -25,7 +25,9 @@ class ProcessResearchThumbnailJob implements ShouldQueue
     public function __construct(
         public Research $research,
         public string $rawPath
-    ) {}
+    ) {
+        $this->onQueue('high');
+    }
 
     /**
      * Execute the job.

@@ -12,9 +12,14 @@ class AccessGrantedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 3;
+    public int $backoff = 60;
+
     public function __construct(
         public Conversation $conversation
-    ) {}
+    ) {
+        $this->onQueue('notifications');
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -34,9 +39,9 @@ class AccessGrantedNotification extends Notification implements ShouldQueue
         $downloadUrl = route('research.download', $this->conversation->research);
 
         return (new MailMessage)
-            ->subject('Download Access Granted: '.$this->conversation->research->title)
+            ->subject('Download Access Granted: '.$this->conversation->research?->title)
             ->greeting('Hello '.$notifiable->name.',')
-            ->line('Great news! The author of "'.$this->conversation->research->title.'" has granted you PDF download access.')
+            ->line('Great news! The author of "'.$this->conversation->research?->title.'" has granted you PDF download access.')
             ->action('Download PDF Paper', $downloadUrl)
             ->line('You can also view your full conversation history in your dashboard.')
             ->line('Thank you for using PURE Research Hub!');
@@ -52,7 +57,7 @@ class AccessGrantedNotification extends Notification implements ShouldQueue
         return [
             'conversation_id' => $this->conversation->id,
             'research_id' => $this->conversation->research_id,
-            'research_title' => $this->conversation->research->title,
+            'research_title' => $this->conversation->research?->title,
             'message' => 'The author has granted you PDF download access for this publication.',
             'link' => route('research.download', $this->conversation->research),
         ];
@@ -67,10 +72,21 @@ class AccessGrantedNotification extends Notification implements ShouldQueue
             'id' => $this->id,
             'type' => static::class,
             'title' => 'Download Access Granted',
-            'message' => 'The author has granted you PDF download access for "'.$this->conversation->research->title.'"',
+            'message' => 'The author has granted you PDF download access for "'.$this->conversation->research?->title.'"',
             'action_url' => route('research.download', $this->conversation->research),
             'created_at' => now()->toIso8601String(),
             'formatted_time' => now()->diffForHumans(),
+        ]);
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('AccessGrantedNotification failed', [
+            'conversation_id' => $this->conversation->id,
+            'error' => $exception->getMessage(),
         ]);
     }
 }

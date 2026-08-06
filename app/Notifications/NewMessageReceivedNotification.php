@@ -14,10 +14,15 @@ class NewMessageReceivedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 3;
+    public int $backoff = 60;
+
     public function __construct(
         public Conversation $conversation,
         public Message $message
-    ) {}
+    ) {
+        $this->onQueue('notifications');
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -34,7 +39,7 @@ class NewMessageReceivedNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $senderName = $this->message->sender ? $this->message->sender->name : ($this->conversation->guest_name ?: 'Researcher');
+        $senderName = $this->message->sender?->name ?: ($this->conversation->guest_name ?: 'Researcher');
 
         // Check if recipient is a guest or registered user
         if ($this->conversation->sender_id === null && $this->conversation->guest_email === $notifiable->email) {
@@ -46,7 +51,7 @@ class NewMessageReceivedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('New Message in Inquiry: '.$this->conversation->subject)
             ->greeting('Hello '.$notifiable->name.',')
-            ->line($senderName.' replied to the conversation regarding "'.$this->conversation->research->title.'".')
+            ->line($senderName.' replied to the conversation regarding "'.$this->conversation->research?->title.'".')
             ->line('Reply: "'.$this->message->body.'"')
             ->action('View & Reply to Message', $url)
             ->line('Thank you for using PURE Research Hub!');
@@ -63,8 +68,8 @@ class NewMessageReceivedNotification extends Notification implements ShouldQueue
             'conversation_id' => $this->conversation->id,
             'message_id' => $this->message->id,
             'research_id' => $this->conversation->research_id,
-            'research_title' => $this->conversation->research->title,
-            'sender_name' => $this->message->sender ? $this->message->sender->name : ($this->conversation->guest_name ?: 'Researcher'),
+            'research_title' => $this->conversation->research?->title,
+            'sender_name' => $this->message->sender?->name ?: ($this->conversation->guest_name ?: 'Researcher'),
             'message' => $this->message->body,
             'link' => route('dashboard.conversations.show', $this->conversation),
         ];
@@ -75,7 +80,7 @@ class NewMessageReceivedNotification extends Notification implements ShouldQueue
      */
     public function toBroadcast(object $notifiable): \Illuminate\Notifications\Messages\BroadcastMessage
     {
-        $senderName = $this->message->sender ? $this->message->sender->name : ($this->conversation->guest_name ?: 'Researcher');
+        $senderName = $this->message->sender?->name ?: ($this->conversation->guest_name ?: 'Researcher');
 
         return new \Illuminate\Notifications\Messages\BroadcastMessage([
             'id' => $this->id,
@@ -85,6 +90,18 @@ class NewMessageReceivedNotification extends Notification implements ShouldQueue
             'action_url' => route('dashboard.conversations.show', $this->conversation),
             'created_at' => now()->toIso8601String(),
             'formatted_time' => now()->diffForHumans(),
+        ]);
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('NewMessageReceivedNotification failed', [
+            'conversation_id' => $this->conversation->id,
+            'message_id' => $this->message->id,
+            'error' => $exception->getMessage(),
         ]);
     }
 }

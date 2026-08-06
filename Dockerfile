@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     supervisor \
     exiftool \
+    libapache2-mod-xsendfile \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
@@ -32,14 +33,16 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-configure intl \
     && docker-php-ext-install pdo_mysql mysqli mbstring exif pcntl bcmath zip intl opcache gd
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Enable Apache modules
+RUN a2enmod rewrite headers xsendfile
 
 # Update Apache configuration to point to public directory and increase Timeout
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 RUN echo "Timeout 600" >> /etc/apache2/apache2.conf
+RUN echo "XSendFile On" >> /etc/apache2/apache2.conf
+RUN echo "XSendFilePath /var/www/html/storage/app/private" >> /etc/apache2/apache2.conf
 
 # Add permissions for storage symlinks
 RUN echo "<Directory /var/www/html/public/storage>\n\

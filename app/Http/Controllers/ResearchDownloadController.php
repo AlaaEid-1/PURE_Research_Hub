@@ -8,14 +8,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+
 
 class ResearchDownloadController extends Controller
 {
     /**
      * Handle secure PDF download streaming for research publications.
      */
-    public function __invoke(Request $request, Research $research): StreamedResponse
+    public function __invoke(Request $request, Research $research)
     {
         Gate::authorize('download', $research);
 
@@ -36,15 +36,13 @@ class ResearchDownloadController extends Controller
         ]);
 
         $fileName = Str::slug($research->title).'.pdf';
+        $absolutePath = Storage::disk('private_research')->path($research->pdf_path);
 
-        return response()->streamDownload(function () use ($research) {
-            $stream = Storage::disk('private_research')->readStream($research->pdf_path);
-            fpassthru($stream);
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }, $fileName, [
+        return response()->download($absolutePath, $fileName, [
             'Content-Type' => 'application/pdf',
+            'Cache-Control' => 'private, max-age=0',
+            'Accept-Ranges' => 'bytes',
+            'X-Sendfile' => $absolutePath,
         ]);
     }
 }

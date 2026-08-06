@@ -4,16 +4,22 @@ namespace App\Notifications;
 
 use App\Models\ResearchAccessRequest;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AccessRequestReceivedNotification extends Notification
+class AccessRequestReceivedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 3;
+    public int $backoff = 60;
+
     public function __construct(
         public ResearchAccessRequest $accessRequest
-    ) {}
+    ) {
+        $this->onQueue('notifications');
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -31,10 +37,10 @@ class AccessRequestReceivedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('New PDF Access Request: '.$this->accessRequest->research->title)
+            ->subject('New PDF Access Request: '.$this->accessRequest->research?->title)
             ->greeting('Hello '.$notifiable->name.',')
-            ->line($this->accessRequest->requester->name.' has requested PDF access to your research paper.')
-            ->line('Paper: "'.$this->accessRequest->research->title.'"')
+            ->line($this->accessRequest->requester?->name.' has requested PDF access to your research paper.')
+            ->line('Paper: "'.$this->accessRequest->research?->title.'"')
             ->line('Message from requester: "'.$this->accessRequest->message.'"')
             ->action('Review Request', route('dashboard.requests.index'))
             ->line('Thank you for contributing to PURE Research Hub!');
@@ -50,9 +56,20 @@ class AccessRequestReceivedNotification extends Notification
         return [
             'access_request_id' => $this->accessRequest->id,
             'research_id' => $this->accessRequest->research_id,
-            'research_title' => $this->accessRequest->research->title,
-            'requester_name' => $this->accessRequest->requester->name,
+            'research_title' => $this->accessRequest->research?->title,
+            'requester_name' => $this->accessRequest->requester?->name,
             'message' => $this->accessRequest->message,
         ];
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('AccessRequestReceivedNotification failed', [
+            'access_request_id' => $this->accessRequest->id,
+            'error' => $exception->getMessage(),
+        ]);
     }
 }

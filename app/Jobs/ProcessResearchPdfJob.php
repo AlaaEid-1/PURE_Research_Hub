@@ -35,7 +35,9 @@ class ProcessResearchPdfJob implements ShouldQueue
      */
     public function __construct(
         public string $pdfPath
-    ) {}
+    ) {
+        $this->onQueue('high');
+    }
 
     /**
      * Execute the job.
