@@ -12,29 +12,23 @@ fi
 echo " Clearing old caches..."
 php artisan optimize:clear || true
 
+echo "Building production caches..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+echo " Creating storage symlink..."
+rm -rf public/storage 2>/dev/null || true
+php artisan storage:link --force || true
 
 # Run database operations only for web container
 if [[ "$1" == "apache2-foreground"* ]]; then
-
     echo "Running database migrations..."
     php artisan migrate --force
 
     echo " Running database seeders..."
     php artisan db:seed --force
-
 fi
-
-
-echo " Creating storage symlink..."
-php artisan storage:link || true
-
-
-echo "Building production caches..."
-
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
 
 echo " Laravel deployment completed successfully."
 

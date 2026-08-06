@@ -258,15 +258,38 @@ class ResearchService
             // Resize max 800x600 (scale down if larger) maintaining aspect ratio
             $image->scaleDown(width: 800, height: 600);
 
-            // Convert to WebP and set quality to 82
-            $encoded = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(82));
-            $filename = Str::uuid().'.webp';
+            try {
+                // Attempt to convert to WebP
+                $encoded = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(82));
+                $extension = 'webp';
+            } catch (\Exception $webpException) {
+                \Illuminate\Support\Facades\Log::warning('WebP encoding failed, falling back to JPEG', [
+                    'filename' => $file->getClientOriginalName(),
+                    'mime' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'user_id' => auth()->id(),
+                    'exception' => $webpException->getMessage()
+                ]);
+
+                // Fallback to JPEG
+                $encoded = $image->encode(new \Intervention\Image\Encoders\JpegEncoder(82));
+                $extension = 'jpg';
+            }
+
+            $filename = Str::uuid().'.'.$extension;
 
             Storage::disk('private_research')->put('thumbnails/'.$filename, (string) $encoded);
 
             return 'thumbnails/'.$filename;
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Thumbnail processing failed', ['error' => $e->getMessage()]);
+            \Illuminate\Support\Facades\Log::error('Thumbnail processing failed', [
+                'filename' => $file->getClientOriginalName(),
+                'mime' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             throw ValidationException::withMessages(['thumbnail_file' => 'The uploaded image could not be processed. Please try a different image.']);
         }
     }

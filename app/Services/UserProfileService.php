@@ -28,14 +28,35 @@ class UserProfileService
                     $image = $manager->decodePath($dto->avatar->getRealPath());
                     $image->scaleDown(width: 400, height: 400);
 
-                    $encoded = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: 82));
-                    $filename = Str::uuid().'.webp';
+                    try {
+                        $encoded = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: 82));
+                        $extension = 'webp';
+                    } catch (\Exception $webpException) {
+                        \Illuminate\Support\Facades\Log::warning('Avatar WebP encoding failed, falling back to JPEG', [
+                            'filename' => $dto->avatar->getClientOriginalName(),
+                            'mime' => $dto->avatar->getMimeType(),
+                            'size' => $dto->avatar->getSize(),
+                            'user_id' => $user->id,
+                            'exception' => $webpException->getMessage()
+                        ]);
+                        $encoded = $image->encode(new \Intervention\Image\Encoders\JpegEncoder(82));
+                        $extension = 'jpg';
+                    }
+
+                    $filename = Str::uuid().'.'.$extension;
 
                     Storage::disk('public')->put('avatars/'.$filename, (string) $encoded);
                     $newAvatarPath = 'avatars/'.$filename;
                     $newAvatarUploaded = true;
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Avatar processing failed', ['error' => $e->getMessage()]);
+                    \Illuminate\Support\Facades\Log::error('Avatar processing failed', [
+                        'filename' => $dto->avatar->getClientOriginalName(),
+                        'mime' => $dto->avatar->getMimeType(),
+                        'size' => $dto->avatar->getSize(),
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                     throw \Illuminate\Validation\ValidationException::withMessages(['avatar' => 'The uploaded image could not be processed.']);
                 }
             }
