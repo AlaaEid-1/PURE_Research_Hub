@@ -169,7 +169,7 @@ class Research extends Model
     public function getThumbnailUrlAttribute(): ?string
     {
         if ($this->thumbnail_path) {
-            return route('research.thumbnail', $this);
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->thumbnail_path);
         }
 
         return null;

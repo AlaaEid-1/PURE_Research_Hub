@@ -26,7 +26,7 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache |
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
 
 # Run database operations only for web container
-if [[ "$1" == "supervisord"* ]]; then
+if [[ "$1" == "apache2-foreground"* ]]; then
     echo "Running database migrations..."
     php artisan migrate --force
 

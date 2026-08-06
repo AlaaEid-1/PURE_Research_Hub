@@ -51,8 +51,8 @@ class ResearchObserver
         // Clean up old thumbnail if replaced
         if ($research->isDirty('thumbnail_path')) {
             $oldThumb = $research->getOriginal('thumbnail_path');
-            if ($oldThumb && Storage::disk('private_research')->exists($oldThumb)) {
-                Storage::disk('private_research')->delete($oldThumb);
+            if ($oldThumb && Storage::disk('public')->exists($oldThumb)) {
+                Storage::disk('public')->delete($oldThumb);
             }
         }
     }
@@ -66,8 +66,8 @@ class ResearchObserver
             Storage::disk('private_research')->delete($research->pdf_path);
         }
 
-        if ($research->thumbnail_path && Storage::disk('private_research')->exists($research->thumbnail_path)) {
-            Storage::disk('private_research')->delete($research->thumbnail_path);
+        if ($research->thumbnail_path && Storage::disk('public')->exists($research->thumbnail_path)) {
+            Storage::disk('public')->delete($research->thumbnail_path);
         }
 
         $this->categoryService->clearCache();

@@ -103,14 +103,26 @@ class BrowserVerificationTest extends TestCase
             $this->fail('Thumbnail URL not found in HTML');
         }
         
-        // 4. Verify URL returns HTTP 200
+        // 4. Request URL directly against the real dev server (since it's a static file now)
         $path = parse_url($url, PHP_URL_PATH);
-        $imgResponse = $this->actingAs($user)->get($path);
+        $fullUrl = 'http://127.0.0.1:8000' . $path;
         
-        echo "[THUMBNAIL] HTTP Status: " . $imgResponse->getStatusCode() . "\n";
-        $imgResponse->assertStatus(200);
+        $context = stream_context_create(['http' => ['ignore_errors' => true]]);
+        $content = file_get_contents($fullUrl, false, $context);
+        $statusLine = $http_response_header[0];
+        preg_match('{HTTP\/\S*\s(\d{3})}', $statusLine, $match);
+        $status = $match[1];
         
-        echo "[THUMBNAIL] Content-Type: " . $imgResponse->headers->get('Content-Type') . "\n";
-        $this->assertStringContainsString('image', $imgResponse->headers->get('Content-Type'));
+        echo "[THUMBNAIL] HTTP Status from 127.0.0.1:8000: " . $status . "\n";
+        $this->assertEquals(200, $status);
+        
+        $contentType = '';
+        foreach ($http_response_header as $header) {
+            if (stripos($header, 'Content-Type:') === 0) {
+                $contentType = $header;
+            }
+        }
+        echo "[THUMBNAIL] " . $contentType . "\n";
+        $this->assertStringContainsString('image', strtolower($contentType));
     }
 }

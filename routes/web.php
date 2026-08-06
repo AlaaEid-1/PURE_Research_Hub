@@ -24,7 +24,6 @@ use App\Http\Controllers\ResearcherAnalyticsController;
 use App\Http\Controllers\ResearcherProfileController;
 use App\Http\Controllers\SavedResearchController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\ThumbnailDownloadController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -48,7 +47,6 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('seo.robot
 // Research Catalog & Secure Downloads
 Route::get('/research', [ResearchController::class, 'index'])->name('research.index');
 Route::get('/research/{research}/download', ResearchDownloadController::class)->name('research.download');
-Route::get('/research/{research}/thumbnail', ThumbnailDownloadController::class)->name('research.thumbnail');
 Route::get('/research/{slug}', [ResearchController::class, 'show'])->name('research.show');
 
 // Categories System
