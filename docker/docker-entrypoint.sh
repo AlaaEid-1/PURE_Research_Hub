@@ -21,6 +21,10 @@ echo " Creating storage symlink..."
 rm -rf public/storage 2>/dev/null || true
 php artisan storage:link --force || true
 
+echo " Setting runtime permissions..."
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
+
 # Run database operations only for web container
 if [[ "$1" == "apache2-foreground"* ]]; then
     echo "Running database migrations..."
