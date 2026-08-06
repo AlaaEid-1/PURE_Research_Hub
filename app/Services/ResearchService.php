@@ -36,7 +36,8 @@ class ResearchService
             }
 
             if ($dto->thumbnailFile) {
-                $thumbnailPath = $this->processThumbnail($dto->thumbnailFile);
+                $rawFilename = 'raw_'.Str::uuid().'.'.$dto->thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'private_research');
             }
 
             $research = \Illuminate\Support\Facades\DB::transaction(function () use ($user, $dto, $pdfPath, $thumbnailPath) {
@@ -64,6 +65,9 @@ class ResearchService
 
             if ($pdfPath) {
                 ProcessResearchPdfJob::dispatch($pdfPath);
+            }
+            if ($thumbnailPath) {
+                \App\Jobs\ProcessResearchThumbnailJob::dispatch($research, $thumbnailPath);
             }
 
             return $research;
@@ -110,7 +114,8 @@ class ResearchService
             }
 
             if ($dto->thumbnailFile) {
-                $newThumbnailPath = $this->processThumbnail($dto->thumbnailFile);
+                $rawFilename = 'raw_'.Str::uuid().'.'.$dto->thumbnailFile->getClientOriginalExtension();
+                $newThumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'private_research');
             }
 
             \Illuminate\Support\Facades\DB::transaction(function () use ($research, $dto, $newPdfPath, $newThumbnailPath) {
@@ -133,6 +138,9 @@ class ResearchService
 
             if ($newPdfUploaded && $newPdfPath) {
                 ProcessResearchPdfJob::dispatch($newPdfPath);
+            }
+            if ($newThumbnailPath) {
+                \App\Jobs\ProcessResearchThumbnailJob::dispatch($research, $newThumbnailPath);
             }
 
             return $research;
@@ -246,51 +254,4 @@ class ResearchService
         $research->authors()->sync($authorPivotData);
     }
 
-    /**
-     * Process, resize, and convert uploaded thumbnail to WebP.
-     */
-    protected function processThumbnail(UploadedFile $file): string
-    {
-        try {
-            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
-            $image = $manager->decodePath($file->getRealPath());
-
-            // Resize max 800x600 (scale down if larger) maintaining aspect ratio
-            $image->scaleDown(width: 800, height: 600);
-
-            try {
-                // Attempt to convert to WebP
-                $encoded = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(82));
-                $extension = 'webp';
-            } catch (\Exception $webpException) {
-                \Illuminate\Support\Facades\Log::warning('WebP encoding failed, falling back to JPEG', [
-                    'filename' => $file->getClientOriginalName(),
-                    'mime' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                    'user_id' => auth()->id(),
-                    'exception' => $webpException->getMessage()
-                ]);
-
-                // Fallback to JPEG
-                $encoded = $image->encode(new \Intervention\Image\Encoders\JpegEncoder(82));
-                $extension = 'jpg';
-            }
-
-            $filename = Str::uuid().'.'.$extension;
-
-            Storage::disk('private_research')->put('thumbnails/'.$filename, (string) $encoded);
-
-            return 'thumbnails/'.$filename;
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Thumbnail processing failed', [
-                'filename' => $file->getClientOriginalName(),
-                'mime' => $file->getMimeType(),
-                'size' => $file->getSize(),
-                'user_id' => auth()->id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            throw ValidationException::withMessages(['thumbnail_file' => 'The uploaded image could not be processed. Please try a different image.']);
-        }
-    }
 }

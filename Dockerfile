@@ -92,5 +92,9 @@ COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Default command (Web Service)
-CMD ["apache2-foreground"]
+# Copy Supervisor configurations
+COPY docker/supervisor/*.conf /etc/supervisor/conf.d/
+COPY docker/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+
+# Default command (Web + Queue Worker via Supervisor)
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
