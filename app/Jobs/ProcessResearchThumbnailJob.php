@@ -36,12 +36,12 @@ class ProcessResearchThumbnailJob implements ShouldQueue
     {
         $disk = Storage::disk('public');
 
-        if (! Storage::disk('private_research')->exists($this->rawPath)) {
+        if (! Storage::disk('public')->exists($this->rawPath)) {
             Log::warning('ProcessResearchThumbnailJob: Raw image not found.', ['path' => $this->rawPath]);
             return;
         }
 
-        $absolutePath = Storage::disk('private_research')->path($this->rawPath);
+        $absolutePath = Storage::disk('public')->path($this->rawPath);
 
         try {
             $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
@@ -76,7 +76,7 @@ class ProcessResearchThumbnailJob implements ShouldQueue
             ]);
 
             // Delete raw image
-            Storage::disk('private_research')->delete($this->rawPath);
+            Storage::disk('public')->delete($this->rawPath);
 
             Log::info('ProcessResearchThumbnailJob: Thumbnail successfully optimized.', [
                 'research_id' => $this->research->id,

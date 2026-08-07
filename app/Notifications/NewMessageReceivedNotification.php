@@ -6,7 +6,6 @@ use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 
@@ -31,31 +30,9 @@ class NewMessageReceivedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail', 'broadcast'];
+        return ['database', 'broadcast'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        $senderName = $this->message->sender?->name ?: ($this->conversation->guest_name ?: 'Researcher');
-
-        // Check if recipient is a guest or registered user
-        if ($this->conversation->sender_id === null && $this->conversation->guest_email === $notifiable->email) {
-            $url = URL::signedRoute('guest.conversations.show', ['conversation' => $this->conversation->id]);
-        } else {
-            $url = route('dashboard.conversations.show', $this->conversation);
-        }
-
-        return (new MailMessage)
-            ->subject('New Message in Inquiry: '.$this->conversation->subject)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line($senderName.' replied to the conversation regarding "'.$this->conversation->research?->title.'".')
-            ->line('Reply: "'.$this->message->body.'"')
-            ->action('View & Reply to Message', $url)
-            ->line('Thank you for using PURE Research Hub!');
-    }
 
     /**
      * Get the array representation of the notification.

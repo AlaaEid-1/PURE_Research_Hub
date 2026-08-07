@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 use Intervention\Image\ImageManager;
 
 class ResearchService
@@ -21,25 +22,35 @@ class ResearchService
      */
     public function createResearch(User $user, ResearchData $dto): Research
     {
+        $startTime = microtime(true);
+
         $pdfPath = null;
         $thumbnailPath = null;
 
         try {
             if ($dto->pdfFile) {
-                $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
-                if ($magic !== '%PDF') {
-                    throw ValidationException::withMessages(['pdf_file' => 'The uploaded file is not a valid PDF document.']);
-                }
+                // $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
+                // if ($magic !== '%PDF') {
+                //     throw ValidationException::withMessages(['pdf_file' => 'The uploaded file is not a valid PDF document.']);
+                // }
 
                 $safeFilename = Str::uuid().'.pdf';
+                $tPdfStart = microtime(true);
+                Log::info('PERF_UPLOAD: PDF_STORAGE_STARTED timestamp=' . $tPdfStart);
                 $pdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
+                Log::info('PERF_UPLOAD: PDF_STORAGE_FINISHED timestamp=' . microtime(true) . ' elapsed=' . round((microtime(true) - $tPdfStart) * 1000) . 'ms');
             }
 
             if ($dto->thumbnailFile) {
                 $rawFilename = 'raw_'.Str::uuid().'.'.$dto->thumbnailFile->getClientOriginalExtension();
-                $thumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'private_research');
+                $tThumbStart = microtime(true);
+                Log::info('PERF_UPLOAD: THUMBNAIL_STORAGE_STARTED timestamp=' . $tThumbStart);
+                $thumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'public');
+                Log::info('PERF_UPLOAD: THUMBNAIL_STORAGE_FINISHED timestamp=' . microtime(true) . ' elapsed=' . round((microtime(true) - $tThumbStart) * 1000) . 'ms');
             }
 
+            $tDbStart = microtime(true);
+            Log::info('PERF_UPLOAD: DATABASE_TRANSACTION_STARTED timestamp=' . $tDbStart);
             $research = \Illuminate\Support\Facades\DB::transaction(function () use ($user, $dto, $pdfPath, $thumbnailPath) {
                 $research = Research::create([
                     'user_id' => $user->id,
@@ -62,13 +73,17 @@ class ResearchService
                 
                 return $research;
             });
+            Log::info('PERF_UPLOAD: DATABASE_TRANSACTION_FINISHED timestamp=' . microtime(true) . ' elapsed=' . round((microtime(true) - $tDbStart) * 1000) . 'ms');
 
+            $tJobStart = microtime(true);
+            Log::info('PERF_UPLOAD: JOB_DISPATCH_STARTED timestamp=' . $tJobStart);
             if ($pdfPath) {
                 ProcessResearchPdfJob::dispatch($pdfPath);
             }
             if ($thumbnailPath) {
                 \App\Jobs\ProcessResearchThumbnailJob::dispatch($research, $thumbnailPath);
             }
+            Log::info('PERF_UPLOAD: JOB_DISPATCH_FINISHED timestamp=' . microtime(true) . ' elapsed=' . round((microtime(true) - $tJobStart) * 1000) . 'ms');
 
             return $research;
 
@@ -77,7 +92,7 @@ class ResearchService
                 Storage::disk('private_research')->delete($pdfPath);
             }
             if ($thumbnailPath) {
-                Storage::disk('private_research')->delete($thumbnailPath);
+                Storage::disk('public')->delete($thumbnailPath);
             }
 
             \Illuminate\Support\Facades\Log::error('Research creation failed: ' . $e->getMessage(), [
@@ -103,10 +118,10 @@ class ResearchService
 
         try {
             if ($dto->pdfFile) {
-                $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
-                if ($magic !== '%PDF') {
-                    throw ValidationException::withMessages(['pdf_file' => 'The uploaded replacement file is not a valid PDF document.']);
-                }
+                // $magic = file_get_contents($dto->pdfFile->getRealPath(), false, null, 0, 4);
+                // if ($magic !== '%PDF') {
+                //     throw ValidationException::withMessages(['pdf_file' => 'The uploaded replacement file is not a valid PDF document.']);
+                // }
 
                 $safeFilename = Str::uuid().'.pdf';
                 $newPdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
@@ -115,7 +130,7 @@ class ResearchService
 
             if ($dto->thumbnailFile) {
                 $rawFilename = 'raw_'.Str::uuid().'.'.$dto->thumbnailFile->getClientOriginalExtension();
-                $newThumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'private_research');
+                $newThumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'public');
             }
 
             \Illuminate\Support\Facades\DB::transaction(function () use ($research, $dto, $newPdfPath, $newThumbnailPath) {
@@ -150,7 +165,7 @@ class ResearchService
                 Storage::disk('private_research')->delete($newPdfPath);
             }
             if ($newThumbnailPath) {
-                Storage::disk('private_research')->delete($newThumbnailPath);
+                Storage::disk('public')->delete($newThumbnailPath);
             }
 
             \Illuminate\Support\Facades\Log::error('Research update failed: ' . $e->getMessage(), [

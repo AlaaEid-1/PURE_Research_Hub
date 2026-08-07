@@ -67,6 +67,11 @@
                 <p class="font-semibold">No notifications</p>
                 <p class="text-[11px]">When you receive inquiries or replies, they will appear here.</p>
             </div>
+            
+            <!-- View All Link -->
+            <a href="{{ route('dashboard.notifications.index') }}" class="block p-3 text-center text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-t border-slate-100 dark:border-slate-800">
+                View all notifications &rarr;
+            </a>
         </div>
     </div>
 </div>
@@ -76,7 +81,18 @@
         Alpine.data('notificationsDropdown', () => ({
             open: false,
             unreadCount: @auth {{ auth()->user()->unreadNotifications->count() }} @else 0 @endauth,
-            items: [],
+            items: @auth @php
+                $topNotifications = auth()->user()->notifications()->take(5)->get()->map(function($notif) {
+                    return [
+                        'id' => $notif->id,
+                        'title' => $notif->data['research_title'] ?? 'Platform Notification',
+                        'message' => isset($notif->data['requester_name']) ? $notif->data['requester_name'].' requested access' : (isset($notif->data['status']) ? 'Status: '.$notif->data['status'] : 'You have a new update.'),
+                        'formatted_time' => $notif->created_at->diffForHumans(),
+                        'action_url' => route('dashboard.notifications.index'),
+                        'read_at' => $notif->read_at
+                    ];
+                });
+            @endphp @json($topNotifications) @else [] @endauth,
             toasts: [],
             seenIds: new Set(),
             channel: null,

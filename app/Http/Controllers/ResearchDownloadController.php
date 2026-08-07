@@ -38,11 +38,14 @@ class ResearchDownloadController extends Controller
         $fileName = Str::slug($research->title).'.pdf';
         $absolutePath = Storage::disk('private_research')->path($research->pdf_path);
 
+        \Illuminate\Support\Facades\Log::info('PDF_DOWNLOAD_DEBUG', [
+            'path' => $absolutePath,
+            'exists' => file_exists($absolutePath),
+            'size' => file_exists($absolutePath) ? filesize($absolutePath) : null,
+        ]);
+
         return response()->download($absolutePath, $fileName, [
-            'Content-Type' => 'application/pdf',
             'Cache-Control' => 'private, max-age=0',
-            'Accept-Ranges' => 'bytes',
-            'X-Sendfile' => $absolutePath,
         ]);
     }
 }

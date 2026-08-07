@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Models\Conversation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class NewInquiryReceivedNotification extends Notification implements ShouldQueue
@@ -23,26 +22,9 @@ class NewInquiryReceivedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail', 'broadcast'];
+        return ['database', 'broadcast'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        $senderName = $this->conversation->sender ? $this->conversation->sender->name : $this->conversation->guest_name;
-        $url = route('dashboard.conversations.show', $this->conversation);
-
-        return (new MailMessage)
-            ->subject('New Inquiry Received: '.$this->conversation->subject)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line($senderName.' sent an inquiry regarding your paper "'.$this->conversation->research->title.'".')
-            ->line('Subject: "'.$this->conversation->subject.'"')
-            ->line('Message: "'.$this->conversation->latestMessage?->body.'"')
-            ->action('View Conversation Thread', $url)
-            ->line('Thank you for using PURE Research Hub!');
-    }
 
     /**
      * Get the array representation of the notification.

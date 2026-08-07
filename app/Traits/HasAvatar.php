@@ -11,7 +11,26 @@ trait HasAvatar
      */
     public function getAvatarUrlAttribute(): string
     {
-        if ($this->avatar_path && Storage::disk('public')->exists($this->avatar_path)) {
+        $exists = false;
+        $absPath = null;
+        $size = 0;
+        if ($this->avatar_path) {
+            $exists = Storage::disk('public')->exists($this->avatar_path);
+            if ($exists) {
+                $absPath = Storage::disk('public')->path($this->avatar_path);
+                $size = filesize($absPath);
+            }
+        }
+        
+        \Illuminate\Support\Facades\Log::info('IMAGE_DEBUG', [
+            'requested_path' => $this->avatar_path,
+            'disk' => 'public',
+            'absolute_path' => $absPath,
+            'exists' => $exists,
+            'filesize' => $size,
+        ]);
+
+        if ($this->avatar_path && $exists) {
             return Storage::disk('public')->url($this->avatar_path);
         }
 

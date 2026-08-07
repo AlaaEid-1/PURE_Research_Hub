@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Models\ResearchAccessRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class AccessRequestDecisionNotification extends Notification implements ShouldQueue
@@ -28,28 +27,9 @@ class AccessRequestDecisionNotification extends Notification implements ShouldQu
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        $statusLabel = $this->accessRequest->status->label();
-        $isApproved = $this->accessRequest->status->value === 'approved';
-
-        $mail = (new MailMessage)
-            ->subject('PDF Access Request Update: '.$this->accessRequest->research?->title)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line('Your PDF access request for "'.$this->accessRequest->research?->title.'" has been updated: '.$statusLabel.'.');
-
-        if ($isApproved && $this->accessRequest->research) {
-            $mail->action('Download PDF Now', route('research.show', $this->accessRequest->research->slug));
-        }
-
-        return $mail->line('Thank you for using PURE Research Hub!');
-    }
 
     /**
      * Get the array representation of the notification.

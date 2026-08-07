@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Models\Conversation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class AccessGrantedNotification extends Notification implements ShouldQueue
@@ -28,24 +27,9 @@ class AccessGrantedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail', 'broadcast'];
+        return ['database', 'broadcast'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        $downloadUrl = route('research.download', $this->conversation->research);
-
-        return (new MailMessage)
-            ->subject('Download Access Granted: '.$this->conversation->research?->title)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line('Great news! The author of "'.$this->conversation->research?->title.'" has granted you PDF download access.')
-            ->action('Download PDF Paper', $downloadUrl)
-            ->line('You can also view your full conversation history in your dashboard.')
-            ->line('Thank you for using PURE Research Hub!');
-    }
 
     /**
      * Get the array representation of the notification.

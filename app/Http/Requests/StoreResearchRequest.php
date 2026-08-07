@@ -7,6 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Support\Facades\Log;
 
 class StoreResearchRequest extends FormRequest
 {
@@ -16,6 +17,19 @@ class StoreResearchRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user() !== null;
+    }
+
+    protected function prepareForValidation()
+    {
+        Log::info('PERF_UPLOAD: VALIDATION_STARTED timestamp=' . microtime(true));
+        if ($this->hasFile('pdf_file')) {
+            Log::info('PERF_UPLOAD: TEMP_FILE_PATH path=' . $this->file('pdf_file')->getRealPath());
+        }
+    }
+
+    protected function passedValidation()
+    {
+        Log::info('PERF_UPLOAD: VALIDATION_FINISHED timestamp=' . microtime(true));
     }
 
     /**

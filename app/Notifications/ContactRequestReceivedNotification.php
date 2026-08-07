@@ -6,7 +6,6 @@ use App\Models\ResearchContactRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class ContactRequestReceivedNotification extends Notification implements ShouldBroadcast
@@ -24,23 +23,9 @@ class ContactRequestReceivedNotification extends Notification implements ShouldB
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail', 'broadcast'];
+        return ['database', 'broadcast'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-            ->subject('New Inquiry Received: '.$this->contactRequest->research->title)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line($this->contactRequest->sender->name.' sent an inquiry regarding your paper "'.$this->contactRequest->research->title.'".')
-            ->line('Message: "'.$this->contactRequest->message.'"')
-            ->line('Sender Email: '.$this->contactRequest->sender->email)
-            ->action('View Conversation', route('dashboard.inquiries.show', $this->contactRequest))
-            ->line('Thank you for using PURE Research Hub!');
-    }
 
     /**
      * Get the broadcast representation of the notification.

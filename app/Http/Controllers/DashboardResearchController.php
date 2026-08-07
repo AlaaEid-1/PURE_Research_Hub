@@ -11,6 +11,7 @@ use App\Services\ResearchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class DashboardResearchController extends Controller
@@ -48,12 +49,19 @@ class DashboardResearchController extends Controller
      */
     public function store(StoreResearchRequest $request): RedirectResponse
     {
+        Log::info('PERF_UPLOAD: REQUEST_STARTED timestamp=' . microtime(true));
+        $tReqStart = microtime(true);
+
         $dto = ResearchData::fromArray($request->validated());
 
         $this->researchService->createResearch($request->user(), $dto);
-
-        return redirect()->route('dashboard.research.index')
+        
+        $response = redirect()->route('dashboard.research.index')
             ->with('success', 'Research paper published successfully!');
+
+        Log::info('PERF_UPLOAD: RESPONSE_RETURNED timestamp=' . microtime(true) . ' elapsed=' . round((microtime(true) - $tReqStart) * 1000) . 'ms');
+
+        return $response;
     }
 
     /**
