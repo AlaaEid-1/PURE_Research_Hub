@@ -185,6 +185,13 @@ class ResearchService
      */
     public function deleteResearch(Research $research): void
     {
+        if ($research->pdf_path) {
+            Storage::disk('private_research')->delete($research->pdf_path);
+        }
+        if ($research->thumbnail_path) {
+            Storage::disk('public')->delete($research->thumbnail_path);
+        }
+
         $research->delete();
     }
 

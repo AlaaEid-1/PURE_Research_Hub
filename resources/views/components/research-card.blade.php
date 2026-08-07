@@ -77,9 +77,20 @@
                 <span class="text-[10px] font-bold uppercase {{ $research->status->value === 'PUBLISHED' ? 'text-green-600' : 'text-amber-500' }}">
                     {{ $research->status->label() }}
                 </span>
-                <a href="{{ route('dashboard.research.edit', $research) }}" class="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors">
-                    Edit & Manage &rarr;
-                </a>
+                <div class="flex items-center space-x-3">
+                    <a href="{{ route('dashboard.research.edit', $research) }}" class="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                        Edit
+                    </a>
+                    @if(auth()->check() && auth()->id() === $research->user_id)
+                        <form action="{{ route('dashboard.research.destroy', $research) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this research? This action cannot be undone and will permanently remove all associated files.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors">
+                                Delete
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
         @endif
     </div>
