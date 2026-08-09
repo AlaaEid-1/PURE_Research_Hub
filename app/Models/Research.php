@@ -168,27 +168,8 @@ class Research extends Model
      */
     public function getThumbnailUrlAttribute(): ?string
     {
-        $exists = false;
-        $absPath = null;
-        $size = 0;
-        if ($this->thumbnail_path) {
-            $exists = \Illuminate\Support\Facades\Storage::disk('public')->exists($this->thumbnail_path);
-            if ($exists) {
-                $absPath = \Illuminate\Support\Facades\Storage::disk('public')->path($this->thumbnail_path);
-                $size = filesize($absPath);
-            }
-        }
-        
-        \Illuminate\Support\Facades\Log::info('IMAGE_DEBUG', [
-            'requested_path' => $this->thumbnail_path,
-            'disk' => 'public',
-            'absolute_path' => $absPath,
-            'exists' => $exists,
-            'filesize' => $size,
-        ]);
-
-        if ($this->thumbnail_path && $exists) {
-            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->thumbnail_path);
+        if (!empty($this->thumbnail_path)) {
+            return \Illuminate\Support\Facades\Storage::disk('avatars')->url($this->thumbnail_path);
         }
 
         return null;

@@ -52,8 +52,11 @@ class ProcessResearchPdfJob implements ShouldQueue
             return;
         }
 
-        $absolutePath = $disk->path($this->pdfPath);
-        $tempOutputPath = $absolutePath.'.sanitized.tmp';
+        $pdfContent = $disk->get($this->pdfPath);
+        $tempInputPath = storage_path('app/private/tmp_' . Str::random(16) . '.pdf');
+        $tempOutputPath = $tempInputPath . '.sanitized.tmp';
+
+        file_put_contents($tempInputPath, $pdfContent);
 
         // Using Symfony Process for secure command execution
         // exiftool -all:all= -o output_file input_file
@@ -62,7 +65,7 @@ class ProcessResearchPdfJob implements ShouldQueue
             '-all:all=',
             '-o',
             $tempOutputPath,
-            $absolutePath,
+            $tempInputPath,
         ]);
 
         $process->setTimeout(240); // 4 minutes max for exiftool
@@ -72,18 +75,17 @@ class ProcessResearchPdfJob implements ShouldQueue
                 $process->mustRun();
             } else {
                 // Mock behavior for testing
-                copy($absolutePath, $tempOutputPath);
+                copy($tempInputPath, $tempOutputPath);
             }
         } catch (ProcessFailedException $exception) {
             Log::error('ProcessResearchPdfJob: exiftool failed.', [
-                'path' => $absolutePath,
+                'path' => $this->pdfPath,
                 'error' => $exception->getMessage(),
             ]);
 
             // Ensure cleanup of partial tmp file if it exists
-            if (file_exists($tempOutputPath)) {
-                unlink($tempOutputPath);
-            }
+            if (file_exists($tempInputPath)) @unlink($tempInputPath);
+            if (file_exists($tempOutputPath)) @unlink($tempOutputPath);
 
             throw $exception;
         }
@@ -91,15 +93,22 @@ class ProcessResearchPdfJob implements ShouldQueue
         // Verify the output file was created and is a valid file
         if (file_exists($tempOutputPath) && filesize($tempOutputPath) > 0) {
             // Replace the original file with the sanitized copy
-            rename($tempOutputPath, $absolutePath);
+            $stream = fopen($tempOutputPath, 'r');
+            $disk->put($this->pdfPath, $stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
             Log::info('ProcessResearchPdfJob: PDF successfully sanitized.', ['path' => $this->pdfPath]);
         } else {
             Log::error('ProcessResearchPdfJob: Sanitized output file is invalid or empty.', ['path' => $tempOutputPath]);
-            if (file_exists($tempOutputPath)) {
-                unlink($tempOutputPath);
-            }
+            if (file_exists($tempInputPath)) @unlink($tempInputPath);
+            if (file_exists($tempOutputPath)) @unlink($tempOutputPath);
             throw new \Exception('Exiftool did not produce a valid output file.');
         }
+        
+        // Cleanup temp files
+        if (file_exists($tempInputPath)) @unlink($tempInputPath);
+        if (file_exists($tempOutputPath)) @unlink($tempOutputPath);
     }
 
     /**
