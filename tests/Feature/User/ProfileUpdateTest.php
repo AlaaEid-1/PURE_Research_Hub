@@ -101,7 +101,7 @@ class ProfileUpdateTest extends TestCase
 
     public function test_valid_avatar_can_be_uploaded(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::fake('avatars');
         $user = User::factory()->create();
 
         $file = \Illuminate\Http\UploadedFile::fake()->image('avatar.jpg');
@@ -111,18 +111,16 @@ class ProfileUpdateTest extends TestCase
             'email' => $user->email,
             'avatar' => $file,
         ]);
-        if (isset($response->exception)) {
-            dd($response->exception->getMessage());
-        }
+        
         $response->assertSessionHasNoErrors();
         $user->refresh();
         $this->assertNotNull($user->avatar_path);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($user->avatar_path);
+        \Illuminate\Support\Facades\Storage::disk('avatars')->assertExists($user->avatar_path);
     }
 
     public function test_oversized_avatar_is_rejected(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::fake('avatars');
         $user = User::factory()->create();
 
         $file = \Illuminate\Http\UploadedFile::fake()->image('avatar.jpg')->size(6000);
@@ -138,7 +136,7 @@ class ProfileUpdateTest extends TestCase
 
     public function test_invalid_avatar_file_is_rejected(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::fake('avatars');
         $user = User::factory()->create();
 
         $file = \Illuminate\Http\UploadedFile::fake()->create('avatar.pdf', 100, 'application/pdf');
@@ -154,11 +152,11 @@ class ProfileUpdateTest extends TestCase
 
     public function test_old_avatar_is_deleted_when_replaced(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::fake('avatars');
         $user = User::factory()->create([
             'avatar_path' => 'avatars/old.webp'
         ]);
-        \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/old.webp', 'old content');
+        \Illuminate\Support\Facades\Storage::disk('avatars')->put('avatars/old.webp', 'old content');
 
         $file = \Illuminate\Http\UploadedFile::fake()->image('avatar.jpg');
 
@@ -169,7 +167,7 @@ class ProfileUpdateTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors();
-        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing('avatars/old.webp');
+        \Illuminate\Support\Facades\Storage::disk('avatars')->assertMissing('avatars/old.webp');
     }
 
     public function test_avatar_fallback_is_used_when_no_avatar(): void

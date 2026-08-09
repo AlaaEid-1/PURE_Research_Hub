@@ -19,7 +19,20 @@ class ResearchDownloadController extends Controller
     {
         Gate::authorize('download', $research);
 
-        if (! Storage::disk('private_research')->exists($research->pdf_path)) {
+        if (empty($research->pdf_path) || $research->pdf_path === '0' || $research->pdf_path === '1') {
+            return redirect()->route('research.show', $research->slug)
+                ->with('error', 'The requested PDF file record is invalid or corrupted.');
+        }
+
+        try {
+            $exists = Storage::disk('private_research')->exists($research->pdf_path);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Storage connectivity error during PDF download: ' . $e->getMessage());
+            return redirect()->route('research.show', $research->slug)
+                ->with('error', 'Storage connectivity error. Please try again later.');
+        }
+
+        if (! $exists) {
             return redirect()->route('research.show', $research->slug)
                 ->with('error', 'The requested PDF file is no longer available on the server.');
         }
@@ -36,15 +49,8 @@ class ResearchDownloadController extends Controller
         ]);
 
         $fileName = Str::slug($research->title).'.pdf';
-        $absolutePath = Storage::disk('private_research')->path($research->pdf_path);
 
-        \Illuminate\Support\Facades\Log::info('PDF_DOWNLOAD_DEBUG', [
-            'path' => $absolutePath,
-            'exists' => file_exists($absolutePath),
-            'size' => file_exists($absolutePath) ? filesize($absolutePath) : null,
-        ]);
-
-        return response()->download($absolutePath, $fileName, [
+        return Storage::disk('private_research')->download($research->pdf_path, $fileName, [
             'Cache-Control' => 'private, max-age=0',
         ]);
     }

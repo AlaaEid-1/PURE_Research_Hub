@@ -34,18 +34,17 @@ class ProcessResearchThumbnailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('avatars');
 
-        if (! Storage::disk('public')->exists($this->rawPath)) {
+        if (! $disk->exists($this->rawPath)) {
             Log::warning('ProcessResearchThumbnailJob: Raw image not found.', ['path' => $this->rawPath]);
             return;
         }
 
-        $absolutePath = Storage::disk('public')->path($this->rawPath);
-
         try {
+            $imageContent = $disk->get($this->rawPath);
             $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
-            $image = $manager->decodePath($absolutePath);
+            $image = $manager->read($imageContent);
 
             // Resize max 800x600 (scale down if larger) maintaining aspect ratio
             $image->scaleDown(width: 800, height: 600);
@@ -68,7 +67,11 @@ class ProcessResearchThumbnailJob implements ShouldQueue
             $filename = Str::uuid().'.'.$extension;
             $newPath = 'thumbnails/'.$filename;
 
-            $disk->put($newPath, (string) $encoded);
+            $putResult = $disk->put($newPath, (string) $encoded);
+            
+            if (!$putResult) {
+                throw new \Exception('Failed to upload optimized thumbnail to storage.');
+            }
 
             // Update database without firing events
             $this->research->updateQuietly([
@@ -76,7 +79,7 @@ class ProcessResearchThumbnailJob implements ShouldQueue
             ]);
 
             // Delete raw image
-            Storage::disk('public')->delete($this->rawPath);
+            $disk->delete($this->rawPath);
 
             Log::info('ProcessResearchThumbnailJob: Thumbnail successfully optimized.', [
                 'research_id' => $this->research->id,

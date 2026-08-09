@@ -45,7 +45,10 @@ class UserProfileService
 
                     $filename = Str::uuid().'.'.$extension;
 
-                    Storage::disk('public')->put('avatars/'.$filename, (string) $encoded);
+                    $putResult = Storage::disk('avatars')->put('avatars/'.$filename, (string) $encoded);
+                    if (!$putResult) {
+                        throw new \Exception('Failed to store avatar on storage disk.');
+                    }
                     $newAvatarPath = 'avatars/'.$filename;
                     $newAvatarUploaded = true;
                 } catch (\Exception $e) {
@@ -85,12 +88,12 @@ class UserProfileService
 
             // Delete old avatar only after DB success
             if ($newAvatarUploaded && $oldAvatarPath) {
-                Storage::disk('public')->delete($oldAvatarPath);
+                Storage::disk('avatars')->delete($oldAvatarPath);
             }
         } catch (\Exception $e) {
             // Delete new avatar if DB failed
             if ($newAvatarUploaded && $newAvatarPath) {
-                Storage::disk('public')->delete($newAvatarPath);
+                Storage::disk('avatars')->delete($newAvatarPath);
             }
             throw $e;
         }

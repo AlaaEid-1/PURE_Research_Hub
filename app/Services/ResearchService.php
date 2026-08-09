@@ -38,6 +38,9 @@ class ResearchService
                 $tPdfStart = microtime(true);
                 Log::info('PERF_UPLOAD: PDF_STORAGE_STARTED timestamp=' . $tPdfStart);
                 $pdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
+                if (!$pdfPath) {
+                    throw new \Exception('Failed to upload PDF file to storage. Connectivity or SSL error.');
+                }
                 Log::info('PERF_UPLOAD: PDF_STORAGE_FINISHED timestamp=' . microtime(true) . ' elapsed=' . round((microtime(true) - $tPdfStart) * 1000) . 'ms');
             }
 
@@ -45,7 +48,10 @@ class ResearchService
                 $rawFilename = 'raw_'.Str::uuid().'.'.$dto->thumbnailFile->getClientOriginalExtension();
                 $tThumbStart = microtime(true);
                 Log::info('PERF_UPLOAD: THUMBNAIL_STORAGE_STARTED timestamp=' . $tThumbStart);
-                $thumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'public');
+                $thumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'avatars');
+                if (!$thumbnailPath) {
+                    throw new \Exception('Failed to upload thumbnail file to storage. Connectivity or SSL error.');
+                }
                 Log::info('PERF_UPLOAD: THUMBNAIL_STORAGE_FINISHED timestamp=' . microtime(true) . ' elapsed=' . round((microtime(true) - $tThumbStart) * 1000) . 'ms');
             }
 
@@ -92,7 +98,7 @@ class ResearchService
                 Storage::disk('private_research')->delete($pdfPath);
             }
             if ($thumbnailPath) {
-                Storage::disk('public')->delete($thumbnailPath);
+                Storage::disk('avatars')->delete($thumbnailPath);
             }
 
             \Illuminate\Support\Facades\Log::error('Research creation failed: ' . $e->getMessage(), [
@@ -125,12 +131,18 @@ class ResearchService
 
                 $safeFilename = Str::uuid().'.pdf';
                 $newPdfPath = $dto->pdfFile->storeAs('research_pdfs', $safeFilename, 'private_research');
+                if (!$newPdfPath) {
+                    throw new \Exception('Failed to upload replacement PDF file to storage. Connectivity or SSL error.');
+                }
                 $newPdfUploaded = true;
             }
 
             if ($dto->thumbnailFile) {
                 $rawFilename = 'raw_'.Str::uuid().'.'.$dto->thumbnailFile->getClientOriginalExtension();
-                $newThumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'public');
+                $newThumbnailPath = $dto->thumbnailFile->storeAs('thumbnails', $rawFilename, 'avatars');
+                if (!$newThumbnailPath) {
+                    throw new \Exception('Failed to upload replacement thumbnail file to storage. Connectivity or SSL error.');
+                }
             }
 
             \Illuminate\Support\Facades\DB::transaction(function () use ($research, $dto, $newPdfPath, $newThumbnailPath) {
@@ -165,7 +177,7 @@ class ResearchService
                 Storage::disk('private_research')->delete($newPdfPath);
             }
             if ($newThumbnailPath) {
-                Storage::disk('public')->delete($newThumbnailPath);
+                Storage::disk('avatars')->delete($newThumbnailPath);
             }
 
             \Illuminate\Support\Facades\Log::error('Research update failed: ' . $e->getMessage(), [
@@ -189,7 +201,7 @@ class ResearchService
             Storage::disk('private_research')->delete($research->pdf_path);
         }
         if ($research->thumbnail_path) {
-            Storage::disk('public')->delete($research->thumbnail_path);
+            Storage::disk('avatars')->delete($research->thumbnail_path);
         }
 
         $research->delete();
